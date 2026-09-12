@@ -12,7 +12,7 @@ struct NCBetaSettingsView: View {
                 Toggle(isOn: $disableLiquidGlass) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Disable Liquid Glass")
-                        Text("NContainerのUIでLiquid Glassを使わないようにします。")
+                        Text("NContainerと起動したアプリのLiquid Glassを無効化します。")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

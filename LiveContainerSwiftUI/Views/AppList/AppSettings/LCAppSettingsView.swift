@@ -89,7 +89,19 @@ struct LCAppSettingsView: View {
                         Spacer()
                         Text(model.uiTweakFolder == nil ? "lc.common.none".loc : model.uiTweakFolder!)
                             .foregroundColor(.gray)
-                            .multilineTextAlignment(.trailing)
+                        .multilineTextAlignment(.trailing)
+                    }
+                }
+
+                if let tweakFolder = model.uiTweakFolder, !tweakFolder.isEmpty {
+                    NavigationLink {
+                        LCTweakFolderView(
+                            baseUrl: (model.uiIsShared ? LCPath.lcGroupTweakPath : LCPath.tweakPath)
+                                .appendingPathComponent(tweakFolder),
+                            isRoot: false
+                        )
+                    } label: {
+                        Label("Edit tweaks for this app", systemImage: "wrench.and.screwdriver")
                     }
                 }
                 

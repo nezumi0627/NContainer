@@ -5,9 +5,22 @@ struct NCPluginManagerView: View {
     @State private var plugins: [NCPluginManifest] = []
     @State private var importing = false
     @State private var errorMessage: String?
+    @AppStorage("NCPlugin.AppSwitcherOverlay") private var appSwitcherOverlay = true
 
     var body: some View {
         List {
+            Section {
+                Toggle(isOn: $appSwitcherOverlay) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Label("App Switcher Overlay", systemImage: "rectangle.stack.badge.person.crop")
+                        Text("起動中アプリの上にNContainerの切替ボタンを表示します。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Built-in Plugins")
+            }
             if plugins.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "puzzlepiece.extension")
