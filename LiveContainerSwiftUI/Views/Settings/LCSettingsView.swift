@@ -69,6 +69,9 @@ struct LCSettingsView: View {
     @AppStorage("BKNoWatchdogs") var disableLiveProcessWatchdog = false
     
     @EnvironmentObject private var sharedModel : SharedModel
+    @Environment(\.openURL) private var openURL
+
+    @AppStorage("LCGridViewEnabled", store: LCUtils.appGroupUserDefault) private var gridViewEnabled = false
     
     @State private var isViewAppeared = false
     
@@ -82,6 +85,14 @@ struct LCSettingsView: View {
     var body: some View {
         NavigationView {
             Form {
+                Section {
+                    Toggle("グリッド表示", isOn: $gridViewEnabled)
+                } header: {
+                    Text("Beta")
+                } footer: {
+                    Text("マイアプリをグリッド表示します。アプリをタップすると起動し、長押しで設定を開けます。")
+                }
+
                 if sharedModel.multiLCStatus != 2 {
                     Section{
                         if !certificateDataFound {
@@ -307,7 +318,7 @@ struct LCSettingsView: View {
                 } footer: {
                     Text("lc.settings.warning".loc)
                 }
-                
+
                 VStack{
                     Text(LCUtils.getVersionInfo())
                         .foregroundStyle(.gray)
@@ -375,6 +386,22 @@ struct LCSettingsView: View {
                     } footer: {
                         Text("lc.settings.injectLCItselfDesc".loc)
                     }
+                }
+
+                Section {
+                    HStack {
+                        Text("作者")
+                        Spacer()
+                        Text("nezumi0627")
+                            .foregroundStyle(.secondary)
+                    }
+                    Button {
+                        openURL(URL(string: "https://github.com/nezumi0627/NContainer")!)
+                    } label: {
+                        Label("NContainer", systemImage: "link")
+                    }
+                } header: {
+                    Text("NContainer")
                 }
             }
             .navigationBarTitle("lc.tabView.settings".loc)

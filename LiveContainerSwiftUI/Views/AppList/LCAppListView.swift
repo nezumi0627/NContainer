@@ -30,6 +30,73 @@ class SearchContext: ObservableObject {
     }
 }
 
+private struct LCAppGridCell: View {
+    @ObservedObject var model: LCAppModel
+    let darkModeIcon: Bool
+    let onSettings: () -> Void
+    let onError: (String) -> Void
+    @State private var isLaunching = false
+
+    var body: some View {
+        Button {
+            Task { await launch() }
+        } label: {
+            VStack(spacing: 8) {
+                ZStack(alignment: .bottomTrailing) {
+                    IconImageView(icon: model.appInfo.iconIsDarkIcon(darkModeIcon))
+                        .frame(width: 72, height: 72)
+
+                    if model.isSigningInProgress || isLaunching {
+                        ProgressView()
+                            .padding(6)
+                            .background(.thinMaterial, in: Circle())
+                    } else if model.isAppRunning {
+                        Image(systemName: "play.fill")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(6)
+                            .background(.green, in: Circle())
+                    }
+                }
+
+                Text(model.displayName)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, minHeight: 128)
+            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                onSettings()
+            } label: {
+                Label("lc.tabView.settings".loc, systemImage: "gear")
+            }
+        }
+        .accessibilityLabel(model.displayName)
+        .accessibilityHint("lc.appBanner.run".loc)
+    }
+
+    private func launch() async {
+        guard !model.isAppRunning, !isLaunching else { return }
+        isLaunching = true
+        defer { isLaunching = false }
+
+        do {
+            if model.appInfo.isLocked && !DataManager.shared.model.isHiddenAppUnlocked {
+                guard try await LCUtils.authenticateUser() else { return }
+            }
+            try await model.runApp()
+        } catch {
+            onError(error.localizedDescription)
+        }
+    }
+}
+
 struct AppReplaceOption : Hashable {
     var isReplace: Bool
     var nameOfFolderToInstall: String
@@ -80,6 +147,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     
     @AppStorage("LCMultitaskMode", store: LCUtils.appGroupUserDefault) var multitaskMode: MultitaskMode = .virtualWindow
     @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) private var darkModeIcon = false
+    @AppStorage("LCGridViewEnabled", store: LCUtils.appGroupUserDefault) private var gridViewEnabled = false
     
     @State private var isViewAppeared = false
     
@@ -131,35 +199,18 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 })
                 .hidden()
                 
-                LazyVStack {
-                    ForEach(filteredApps, id: \.self) { app in
-                        LCAppBanner(appModel: app, delegate: self)
-                    }
-                    .transition(.scale)
-                }
-                .padding()
-                .animation(searchContext.isTyping ? nil : .easeInOut, value: filteredApps)
+                appCollection(filteredApps)
 
                 VStack {
                     if LCUtils.appGroupUserDefault.bool(forKey: "LCStrictHiding") {
                         if sharedModel.isHiddenAppUnlocked {
-                            LazyVStack {
-                                HStack {
-                                    Text("lc.appList.hiddenApps".loc)
-                                        .font(.system(.title2).bold())
-                                    Spacer()
-                                }
-                                
-                                ForEach(filteredHiddenApps, id: \.self) { app in
-                                    LCAppBanner(appModel: app, delegate: self)
-                                }
-                                .transition(.scale)
-                                
+                            VStack(alignment: .leading) {
+                                Text("lc.appList.hiddenApps".loc)
+                                    .font(.system(.title2).bold())
+                                appCollection(filteredHiddenApps)
                             }
-                            .padding()
+                            .padding(.top)
                             .transition(.opacity)
-                            .animation(searchContext.isTyping ? nil : .easeInOut, value: filteredHiddenApps)
-                            
                             if sharedModel.hiddenApps.count == 0 {
                                 Text("lc.appList.hideAppTip".loc)
                                     .foregroundStyle(.gray)
@@ -172,10 +223,14 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                                     .font(.system(.title2).bold())
                                 Spacer()
                             }
-                            ForEach(filteredHiddenApps, id: \.self) { app in
-                                if sharedModel.isHiddenAppUnlocked {
+                            if gridViewEnabled && sharedModel.isHiddenAppUnlocked {
+                                appCollection(filteredHiddenApps)
+                            } else if sharedModel.isHiddenAppUnlocked {
+                                ForEach(filteredHiddenApps, id: \.self) { app in
                                     LCAppBanner(appModel: app, delegate: self)
-                                } else {
+                                }
+                            } else {
+                                ForEach(filteredHiddenApps, id: \.self) { _ in
                                     LCAppSkeletonBanner()
                                 }
                             }
@@ -433,6 +488,41 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         }
         .searchable(text: $searchContext.query)
 
+    }
+
+    @ViewBuilder
+    private func appCollection(_ apps: [LCAppModel]) -> some View {
+        if gridViewEnabled {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 145), spacing: 12)],
+                spacing: 12
+            ) {
+                ForEach(apps, id: \.self) { app in
+                    LCAppGridCell(
+                        model: app,
+                        darkModeIcon: darkModeIcon,
+                        onSettings: {
+                            openNavigationView(view: AnyView(LCAppSettingsView(model: app)))
+                        },
+                        onError: { message in
+                            errorInfo = message
+                            errorShow = true
+                        }
+                    )
+                }
+            }
+            .padding(.horizontal)
+            .animation(searchContext.isTyping ? nil : .easeInOut, value: apps)
+        } else {
+            LazyVStack {
+                ForEach(apps, id: \.self) { app in
+                    LCAppBanner(appModel: app, delegate: self)
+                }
+                .transition(.scale)
+            }
+            .padding()
+            .animation(searchContext.isTyping ? nil : .easeInOut, value: apps)
+        }
     }
     
     var JITEnablingModal : some View {
