@@ -4,14 +4,16 @@
    
 
 <div align="center">
-  <h1><b>LiveContainer</b></h1>
-  <p><i>An app launcher that runs iOS apps without actually installing them! </i></p>
+  <h1><b>NContainer</b></h1>
+  <p><i>An independent LiveContainer-based app launcher for iOS.</i></p>
 </div>
 <h6 align="center">
 
 Crowdin Project: [![Crowdin](https://badges.crowdin.net/livecontainer/localized.svg)](https://crowdin.com/project/livecontainer) &nbsp;| &nbsp; Documentation:[liveconainer.github.io](https://livecontainer.github.io/docs/intro)
 
-# LiveContainer
+# NContainer
+
+NContainer is an independent fork based on [LiveContainer](https://github.com/LiveContainer/LiveContainer). It preserves the upstream project’s GNU AGPL v3 license and adds NContainer features behind individually configurable Beta flags.
 
 - LiveContainer is an app launcher (not emulator or hypervisor) that allows you to run iOS apps inside it.
 - Allows you to install unlimited apps (3 app/10 app id free developer account limit does not apply here) with only one app & app id. You can also have multiple versions of an app installed with multiple data containers.

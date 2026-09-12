@@ -1602,7 +1602,7 @@
 				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LiveContainer/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = LiveContainer;
+				INFOPLIST_KEY_CFBundleDisplayName = NContainer;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -1617,7 +1617,7 @@
 				NEW_SETTING = "";
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
-				PRODUCT_NAME = LiveContainer;
+				PRODUCT_NAME = NContainer;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -1646,7 +1646,7 @@
 				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LiveContainer/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = LiveContainer;
+				INFOPLIST_KEY_CFBundleDisplayName = NContainer;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -1664,7 +1664,7 @@
 					_LiveContainerMainC,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
-				PRODUCT_NAME = LiveContainer;
+				PRODUCT_NAME = NContainer;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
