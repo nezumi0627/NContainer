@@ -816,6 +816,7 @@ public struct MultitaskDockSwiftView: View {
     @EnvironmentObject var dockManager: MultitaskDockManager
     @State private var dragOffset = CGSize.zero
     @State private var isMoving: Bool = false
+    @State private var appSwitcherExpanded = false
     @AppStorage("LCHideCollapsedDock", store: LCUtils.appGroupUserDefault) var hideCollapsedDock: Bool = false
     @AppStorage("NCPlugin.AppSwitcherOverlay") private var appSwitcherOverlay = true
     
@@ -837,9 +838,11 @@ public struct MultitaskDockSwiftView: View {
                 } else {
                     VStack(spacing: 8) {
                         if appSwitcherOverlay {
-                            AppSwitcherPluginButtonView()
-                                .onTapGesture {
-                                    dockManager.toggleDockCollapse()
+                            AppSwitcherPluginButtonView(isExpanded: appSwitcherExpanded)
+                                .onLongPressGesture(minimumDuration: 0.45) {
+                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                        appSwitcherExpanded.toggle()
+                                    }
                                 }
                         }
                         CollapseButtonView()
@@ -852,8 +855,10 @@ public struct MultitaskDockSwiftView: View {
                                 dockManager.minimizeAllWindows()
                             }
                         
-                        ForEach(dockManager.apps) { app in
-                            AppIconView(app: app)
+                        if !appSwitcherOverlay || appSwitcherExpanded {
+                            ForEach(dockManager.apps) { app in
+                                AppIconView(app: app)
+                            }
                         }
                     }
                 }
@@ -984,13 +989,14 @@ public struct MultitaskDockSwiftView: View {
 @available(iOS 16.0, *)
 struct AppSwitcherPluginButtonView: View {
     @EnvironmentObject var dockManager: MultitaskDockManager
+    let isExpanded: Bool
 
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color.blue.opacity(0.85))
                 .frame(width: dockManager.adaptiveIconSize, height: dockManager.adaptiveIconSize)
-            Image(systemName: "rectangle.stack.badge.person.crop")
+            Image(systemName: isExpanded ? "xmark" : "rectangle.stack.badge.person.crop")
                 .foregroundColor(.white)
                 .font(.system(size: dockManager.adaptiveIconSize * 0.38, weight: .semibold))
         }
