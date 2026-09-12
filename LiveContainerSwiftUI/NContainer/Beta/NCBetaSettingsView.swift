@@ -4,9 +4,22 @@ struct NCBetaSettingsView: View {
     @State private var values: [NCBetaFeature: Bool] = Dictionary(
         uniqueKeysWithValues: NCBetaFeature.allCases.map { ($0, NCBetaFeatures.isEnabled($0)) }
     )
+    @AppStorage(NCBetaFeatures.disableLiquidGlassKey) private var disableLiquidGlass = false
 
     var body: some View {
         Form {
+            Section {
+                Toggle(isOn: $disableLiquidGlass) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Disable Liquid Glass")
+                        Text("NContainerのUIでLiquid Glassを使わないようにします。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Appearance")
+            }
             Section {
                 ForEach(NCBetaFeature.allCases) { feature in
                     Toggle(isOn: binding(for: feature)) {

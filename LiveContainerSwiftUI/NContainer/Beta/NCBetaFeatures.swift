@@ -9,6 +9,10 @@ enum NCBetaFeature: String, CaseIterable, Identifiable {
     case ipaExport = "NCBeta.IPAExport"
     case keepOriginalIPA = "NCBeta.KeepOriginalIPA"
 
+    static var ncontainerFeatures: [NCBetaFeature] {
+        [.ncontainerHome, .nStatus, .fullscreenApps, .ipaExport, .keepOriginalIPA]
+    }
+
     var id: String { rawValue }
 
     var title: String {
@@ -39,6 +43,12 @@ enum NCBetaFeature: String, CaseIterable, Identifiable {
 }
 
 enum NCBetaFeatures {
+    static let disableLiquidGlassKey = "NCBeta.DisableLiquidGlass"
+
+    static var isLiquidGlassDisabled: Bool {
+        UserDefaults.standard.bool(forKey: disableLiquidGlassKey)
+    }
+
     static func isEnabled(_ feature: NCBetaFeature) -> Bool {
         let defaults = UserDefaults.standard
         guard defaults.object(forKey: feature.rawValue) != nil else {
