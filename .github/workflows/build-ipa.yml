@@ -108,6 +108,7 @@ jobs:
           - SideStore IPA SHA-256: `${IPA_SHA256}`
           - Standard IPA size: `${SIDESTORE_SIZE}` bytes
           - Standard IPA SHA-256: `${SIDESTORE_SHA256}`
+          - SideStore source: https://github.com/${{ github.repository }}/releases/download/nightly/ncontainer_source.json
           - Signing: unsigned
           EOF
 
@@ -152,7 +153,7 @@ jobs:
             echo "[⬇️ Download SideStore embedded IPA](https://github.com/${{ github.repository }}/releases/download/nightly/${scheme}%2BSideStore.ipa)"
             echo ""
             echo "[⬇️ Download standard IPA](https://github.com/${{ github.repository }}/releases/download/nightly/${scheme}.ipa)"
-            echo "[➕ Add NContainer to SideStore](https://github.com/${{ github.repository }}/releases/download/nightly/ncontainer_source.json)"
+            echo "[https://github.com/${{ github.repository }}/releases/download/nightly/ncontainer_source.json](https://github.com/${{ github.repository }}/releases/download/nightly/ncontainer_source.json)"
             echo ""
             echo "### Build details"
             echo ""
