@@ -98,6 +98,14 @@ jobs:
           VERSION="$IPA_VERSION" BUILD="$IPA_BUILD" IPA_SIZE="$IPA_SIZE" \
             python3 .github/generate_source.py .github/ncontainer_source.json
 
+      - name: Validate update identity and embedded SideStore
+        run: |
+          set -euxo pipefail
+          python3 .github/verify_ncontainer_package.py \
+            --app-plist Payload/LiveContainer.app/Info.plist \
+            --payload-root Payload \
+            --source .github/ncontainer_source.json
+
       - name: Write build details
         run: |
           cat > build-summary.md <<EOF
