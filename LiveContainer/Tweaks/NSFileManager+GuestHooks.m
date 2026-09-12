@@ -35,16 +35,23 @@ void NSFMGuestHooksInit(void) {
 @implementation NSFileManager(LiveContainerHooks)
 
 - (nullable NSURL *)hook_containerURLForSecurityApplicationGroupIdentifier:(NSString *)groupIdentifier {
-    if([groupIdentifier isEqualToString:[NSClassFromString(@"LCSharedUtils") appGroupID]]) {
-        return [NSURL fileURLWithPath: NSUserDefaults.lcAppGroupPath];
+    NSString *safeGroupIdentifier = groupIdentifier ?: @"Unknown";
+    NSString *lcPath = NSUserDefaults.lcAppGroupPath;
+    if([safeGroupIdentifier isEqualToString:[NSClassFromString(@"LCSharedUtils") appGroupID]] && lcPath.length > 0) {
+        return [NSURL fileURLWithPath:lcPath];
     }
     NSURL *result;
     if(isolateAppGroup) {
-        result = [NSURL fileURLWithPath:[NSString stringWithFormat:@"%s/LCAppGroup/%@", getenv("HOME"), groupIdentifier]];
-    } else if (NSUserDefaults.lcAppGroupPath){
-        result = [NSURL fileURLWithPath:[NSString stringWithFormat:@"%@/LiveContainer/Data/AppGroup/%@", NSUserDefaults.lcAppGroupPath, groupIdentifier]];
+        NSString *homePath = [NSString stringWithUTF8String:getenv("HOME") ?: ""];
+        result = [NSURL fileURLWithPath:[[homePath stringByAppendingPathComponent:@"LCAppGroup"] stringByAppendingPathComponent:safeGroupIdentifier]];
+    } else if (lcPath.length > 0){
+        result = [NSURL fileURLWithPath:[[lcPath stringByAppendingPathComponent:@"LiveContainer/Data/AppGroup"] stringByAppendingPathComponent:safeGroupIdentifier]];
     } else {
-        result = [NSURL fileURLWithPath:[NSString stringWithFormat:@"%s/Documents/Data/AppGroup/%@", getenv("LC_HOME_PATH"), groupIdentifier]];
+        NSString *homePath = [NSString stringWithUTF8String:getenv("LC_HOME_PATH") ?: ""];
+        if (homePath.length == 0) {
+            homePath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
+        }
+        result = [NSURL fileURLWithPath:[[homePath stringByAppendingPathComponent:@"Data/AppGroup"] stringByAppendingPathComponent:safeGroupIdentifier]];
     }
     [NSFileManager.defaultManager createDirectoryAtURL:[result URLByAppendingPathComponent:@"Library/Caches"] withIntermediateDirectories:YES attributes:nil error:nil];
     return result;

@@ -57,9 +57,10 @@ NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
     static dispatch_once_t once;
     static NSString *appGroupID = @"Unknown";
     dispatch_once(&once, ^{
+        NSString *teamIdentifier = [self teamIdentifier] ?: @"";
         NSArray* possibleAppGroups = @[
-            [@"group.com.SideStore.SideStore." stringByAppendingString:[self teamIdentifier]],
-            [@"group.com.rileytestut.AltStore." stringByAppendingString:[self teamIdentifier]]
+            [@"group.com.SideStore.SideStore." stringByAppendingString:teamIdentifier],
+            [@"group.com.rileytestut.AltStore." stringByAppendingString:teamIdentifier]
         ];
         
         // we prefer app groups with "Apps" in it, which indicate this app group is actually used by the store.
