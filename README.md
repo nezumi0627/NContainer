@@ -15,6 +15,12 @@ Crowdin Project: [![Crowdin](https://badges.crowdin.net/livecontainer/localized.
 
 NContainer is an independent fork based on [LiveContainer](https://github.com/LiveContainer/LiveContainer). It preserves the upstream project’s GNU AGPL v3 license and adds NContainer features behind individually configurable Beta flags.
 
+## NContainer distribution policy
+
+The SideStore embedded build is the primary NContainer build. Development, verification, and release notes target `LiveContainer+SideStore.ipa` first. The standard `LiveContainer.ipa` remains available as a compatibility build.
+
+GitHub Actions publishes both unsigned IPA files as prerelease assets and writes download links, version, build number, file size, and SHA-256 to the run summary. See [AGENT.md](AGENT.md) for the development rules and build workflow.
+
 - LiveContainer is an app launcher (not emulator or hypervisor) that allows you to run iOS apps inside it.
 - Allows you to install unlimited apps (3 app/10 app id free developer account limit does not apply here) with only one app & app id. You can also have multiple versions of an app installed with multiple data containers.
 - (Below iOS 26) When JIT is available, codesign is entirely bypassed, no need to sign your apps before installing. Otherwise, your app will be signed with the same certificate used by LiveContainer.
@@ -28,7 +34,7 @@ NContainer is an independent fork based on [LiveContainer](https://github.com/Li
 
 
 # Installation
-**LiveContainer comes with a standalone version and a version with built-in SideStore. [Please read the install guide here](https://livecontainer.github.io/docs/installation)**
+**NContainer's primary distribution is the SideStore embedded build. The standard build is provided for compatibility. [Please read the install guide here](https://livecontainer.github.io/docs/installation)**
 
 If you encounter any issue please [read our FAQ here](https://livecontainer.github.io/docs/faq)
 
@@ -66,7 +72,7 @@ Nightly
 </tr>
 </table>
 
-### LiveContainer+SideStore
+### NContainer with embedded SideStore (primary)
 |Stable|Nightly|
 |:-:|:-:|
 |<a href="https://github.com/LiveContainer/LiveContainer/releases/latest/download/LiveContainer+SideStore.ipa" target="_blank"><img src="https://raw.githubusercontent.com/StikStore/altdirect/refs/heads/main/assets/png/Download_Blue.png" alt="Download .ipa" width="200" /></a>|<a href="https://github.com/LiveContainer/LiveContainer/releases/download/nightly/LiveContainer+SideStore.ipa" target="_blank"><img src="https://raw.githubusercontent.com/StikStore/altdirect/refs/heads/main/assets/png/Download_Blue.png" alt="Download .ipa" width="200" /></a>|
@@ -116,7 +122,9 @@ Some apps may experience issues with their file pickers or not be able to apply 
 Unfortunately, not all apps work in LiveContainer, so we have a [compatibility list](https://github.com/LiveContainer/LiveContainer/labels/compatibility) to tell if there is apps that have issues. If they aren't on this list, then it's likely going run. However, if it doesn't work, please make an [issue](https://github.com/LiveContainer/LiveContainer/issues/new/choose) about it.
 
 ## Building
-Open Xcode, edit `DEVELOPMENT_TEAM[config=Debug]` in `xcconfigs/Global.xcconfig` to your team id and compile.
+The primary build is GitHub Actions: run `Build NContainer IPA` manually from the Actions tab. It creates `LiveContainer+SideStore.ipa` first and also produces the standard IPA as a compatibility artifact. Both files are unsigned and are intended to be installed through SideStore or another signing tool.
+
+For local Xcode development, edit `DEVELOPMENT_TEAM[config=Debug]` in `xcconfigs/Global.xcconfig` and compile.
 
 ## Project structure
 ### Main executable
