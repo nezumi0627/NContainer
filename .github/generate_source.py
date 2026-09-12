@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 
 def main() -> None:
     output = sys.argv[1]
-    with open("LiveContainer/Info.plist", "rb") as handle:
+    plist_path = os.environ.get("INFO_PLIST", "LiveContainer/Info.plist")
+    with open(plist_path, "rb") as handle:
         info = plistlib.load(handle)
 
     repository = os.environ["REPOSITORY"]

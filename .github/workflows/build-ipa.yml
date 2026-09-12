@@ -91,6 +91,7 @@ jobs:
         env:
           REPOSITORY: ${{ github.repository }}
           RELEASE_TAG: nightly
+          INFO_PLIST: Payload/LiveContainer.app/Info.plist
         run: |
           VERSION="$IPA_VERSION" BUILD="$IPA_BUILD" IPA_SIZE="$IPA_SIZE" \
             python3 .github/generate_source.py .github/ncontainer_source.json
