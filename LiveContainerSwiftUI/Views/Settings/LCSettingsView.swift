@@ -216,16 +216,6 @@ struct LCSettingsView: View {
                 } footer: {
                     Text("lc.settings.dynamicColors.desc".loc)
                 }
-
-                Section {
-                    NavigationLink {
-                        NCBetaSettingsView()
-                    } label: {
-                        Label("NContainer Beta Lab", systemImage: "flask")
-                    }
-                } footer: {
-                    Text("NContainer の Beta 機能を個別に有効化できます。")
-                }
                 Section{
                     Toggle(isOn: $frameShortIcon) {
                         Text("lc.settings.FrameIcon".loc)
