@@ -67,6 +67,8 @@ jobs:
       - name: Package IPA with embedded SideStore
         run: |
           set -euxo pipefail
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" \
+            "$archive_path.xcarchive/Products/Applications/LiveContainer.app/Info.plist"
           bash .github/build_github.sh
           test -f "${scheme}.ipa"
           test -f "${scheme}+SideStore.ipa"
