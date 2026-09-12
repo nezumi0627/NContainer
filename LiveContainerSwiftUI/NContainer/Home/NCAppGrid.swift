@@ -11,24 +11,32 @@ struct NCAppGrid: View {
     var body: some View {
         LazyVGrid(columns: columns, spacing: 24) {
             ForEach(sharedModel.apps, id: \.self) { app in
-                NCAppIconView(app: app, darkModeIcon: darkModeIcon)
-                    .onTapGesture { launch(app) }
-                    .contextMenu {
-                        Button { launch(app) } label: {
-                            Label("Launch", systemImage: "play.fill")
-                        }
-                        NavigationLink {
-                            LCAppSettingsView(model: app)
-                        } label: {
-                            Label("App Settings", systemImage: "gearshape")
-                        }
-                        Button {
-                            settingsApp = app
-                            showSettings = true
-                        } label: {
-                            Label("Open App Settings", systemImage: "slider.horizontal.3")
-                        }
+                VStack(spacing: 4) {
+                    NCAppIconView(app: app, darkModeIcon: darkModeIcon)
+                        .contentShape(Rectangle())
+                        .onTapGesture { launch(app) }
+                    Button {
+                        settingsApp = app
+                        showSettings = true
+                    } label: {
+                        Label("App Settings", systemImage: "gearshape")
+                            .labelStyle(.iconOnly)
+                            .font(.caption)
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("App Settings")
+                }
+                .contextMenu {
+                    Button { launch(app) } label: {
+                        Label("Launch", systemImage: "play.fill")
+                    }
+                    Button {
+                        settingsApp = app
+                        showSettings = true
+                    } label: {
+                        Label("App Settings", systemImage: "gearshape")
+                    }
+                }
             }
         }
         .padding(.horizontal)

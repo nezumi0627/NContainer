@@ -1,9 +1,9 @@
 import SwiftUI
+import UIKit
 
 struct NCStatusView: View {
     @EnvironmentObject private var sharedModel: SharedModel
     @State private var expirationDate: Date?
-    @State private var certificateStatus: Int?
 
     private var certificateReady: Bool {
         LCSharedUtils.certificatePassword() != nil
@@ -38,6 +38,9 @@ struct NCStatusView: View {
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .accessibilityElement(children: .combine)
         .onAppear(perform: validateCertificate)
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            validateCertificate()
+        }
     }
 
     private var certificateText: String {
@@ -56,9 +59,8 @@ struct NCStatusView: View {
 
     private func validateCertificate() {
         guard certificateReady else { return }
-        LCUtils.validateCertificate { status, date, _, _ in
+        LCUtils.validateCertificate { _, date, _, _ in
             DispatchQueue.main.async {
-                certificateStatus = Int(status)
                 expirationDate = date
             }
         }

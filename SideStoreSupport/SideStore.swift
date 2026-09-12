@@ -100,9 +100,14 @@ class RefreshHandler: NSObject, RefreshServer {
 
         // launch SideStore if it's not running
         if (sideStorePid <= 0 || getpgid(sideStorePid) <= 0) && launchContinuation == nil {
-            let lcHome = String(cString:getenv("LC_HOME_PATH"))
+            guard let lcHomeCString = getenv("LC_HOME_PATH"), !String(cString: lcHomeCString).isEmpty else {
+                throw NSError(domain: "SideStore", code: 2, userInfo: [NSLocalizedDescriptionKey: "LiveContainer home path is unavailable"])
+            }
+            let lcHome = String(cString: lcHomeCString)
             let sideStoreHomeURL = URL(fileURLWithPath: lcHome).appendingPathComponent("Documents/SideStore")
-            let bookmarkData = bookmarkForURL(sideStoreHomeURL)!
+            guard let bookmarkData = bookmarkForURL(sideStoreHomeURL) else {
+                throw NSError(domain: "SideStore", code: 3, userInfo: [NSLocalizedDescriptionKey: "Unable to access SideStore data"])
+            }
 
             // start LiveProcess
             let extensionItem = NSExtensionItem()

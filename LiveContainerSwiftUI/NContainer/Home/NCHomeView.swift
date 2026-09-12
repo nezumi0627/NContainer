@@ -2,11 +2,13 @@ import SwiftUI
 
 struct NCHomeView: View {
     @EnvironmentObject private var sharedModel: SharedModel
-    @State private var showAppLibrary = false
-    @State private var showSources = false
-    @State private var showTweaks = false
-    @State private var showPlugins = false
-    @State private var showFullscreenSettings = false
+
+    private enum Route: String, Identifiable {
+        case appLibrary, sources, tweaks, plugins, fullscreen
+        var id: String { rawValue }
+    }
+
+    @State private var route: Route?
 
     var body: some View {
         NavigationView {
@@ -17,6 +19,7 @@ struct NCHomeView: View {
                         .padding(.horizontal)
                     NCStatusView()
                         .padding(.horizontal)
+                    quickActions
                     if sharedModel.apps.isEmpty {
                         VStack(spacing: 10) {
                             Image(systemName: "square.stack.3d.up")
@@ -46,30 +49,30 @@ struct NCHomeView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
                         Button {
-                            showAppLibrary = true
+                            route = .appLibrary
                         } label: {
                             Label("App Library", systemImage: "list.bullet.rectangle")
                         }
                         Button {
-                            showSources = true
+                            route = .sources
                         } label: {
                             Label("SideStore Sources", systemImage: "books.vertical")
                         }
                         Button {
-                            showTweaks = true
+                            route = .tweaks
                         } label: {
                             Label("Tweak Manager", systemImage: "wrench.and.screwdriver")
                         }
                         if NCBetaFeatures.isEnabled(.fullscreenApps) {
                             Button {
-                                showFullscreenSettings = true
+                                route = .fullscreen
                             } label: {
                                 Label("Fullscreen Apps", systemImage: "arrow.up.left.and.arrow.down.right")
                             }
                         }
                         if NCBetaFeatures.isEnabled(.pluginSystem) {
                             Button {
-                                showPlugins = true
+                                route = .plugins
                             } label: {
                                 Label("Plugin Manager", systemImage: "puzzlepiece.extension")
                             }
@@ -80,32 +83,57 @@ struct NCHomeView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        showAppLibrary = true
+                        route = .appLibrary
                     } label: {
                         Label("Import IPA", systemImage: "doc.badge.plus")
                     }
                     .accessibilityLabel("IPAを取り込む。App Libraryの追加ボタンを開きます")
                 }
             }
-            .sheet(isPresented: $showAppLibrary) {
-                LCAppListView()
+            .fullScreenCover(item: $route) { route in
+                destination(for: route)
             }
-            .sheet(isPresented: $showSources) {
-                LCSourcesView()
+        }
+    }
+
+    private var quickActions: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            actionButton("App Library", systemImage: "list.bullet.rectangle", route: .appLibrary)
+            actionButton("Sources", systemImage: "books.vertical", route: .sources)
+            actionButton("Tweak Manager", systemImage: "wrench.and.screwdriver", route: .tweaks)
+            actionButton("Plugin Manager", systemImage: "puzzlepiece.extension", route: .plugins)
+            if NCBetaFeatures.isEnabled(.fullscreenApps) {
+                actionButton("Fullscreen", systemImage: "arrow.up.left.and.arrow.down.right", route: .fullscreen)
             }
-            .sheet(isPresented: $showTweaks) {
-                LCTweaksView()
-            }
-            .sheet(isPresented: $showPlugins) {
-                NavigationView {
-                    NCPluginManagerView()
-                }
-            }
-            .sheet(isPresented: $showFullscreenSettings) {
-                NavigationView {
-                    LCMultitaskSettingView()
-                }
-            }
+        }
+        .padding(.horizontal)
+    }
+
+    private func actionButton(_ title: String, systemImage: String, route: Route) -> some View {
+        Button { self.route = route } label: {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 11)
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func destination(for route: Route) -> some View {
+        switch route {
+        case .appLibrary:
+            LCAppListView()
+        case .sources:
+            LCSourcesView()
+        case .tweaks:
+            LCTweaksView()
+        case .plugins:
+            NavigationView { NCPluginManagerView() }
+        case .fullscreen:
+            NavigationView { LCMultitaskSettingView() }
         }
     }
 }
