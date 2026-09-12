@@ -1,0 +1,26 @@
+name: Validate NContainer Source
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/generate_source.py"
+      - ".github/ncontainer_source.json"
+      - ".github/workflows/validate-source.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Validate source JSON
+        env:
+          REPOSITORY: ${{ github.repository }}
+          VERSION: 0.1.0-beta
+          BUILD: 0
+          IPA_SIZE: 1
+        run: |
+          python3 .github/generate_source.py /tmp/ncontainer_source.json
+          python3 -m json.tool /tmp/ncontainer_source.json >/dev/null

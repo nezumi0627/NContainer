@@ -16,7 +16,15 @@ SideStore 内蔵版を標準の開発・検証・配布対象にします。
 
 主 workflow は `.github/workflows/build-ipa.yml` です。
 
-この workflow は Xcode 26.2 でアーカイブを作り、`.github/build_github.sh` を使って SideStore 内蔵 IPA と通常版 IPA を生成します。Actions Summary と公開 prerelease に、両方のリンク、バージョン、サイズ、SHA-256 を出力します。
+この workflow は Xcode 26.2 でアーカイブを作り、Xcode DerivedData キャッシュと浅い checkout を使って待ち時間を抑えます。`.github/build_github.sh` で SideStore 内蔵 IPA と通常版 IPAを生成し、`nightly` リリースへ上書き公開します。Actions Summary と公開 prerelease に、両方のリンク、NContainer用SideStoreソース、バージョン、サイズ、SHA-256 を出力します。
+
+SideStore source URL:
+
+```text
+https://github.com/nezumi0627/NContainer/releases/download/nightly/ncontainer_source.json
+```
+
+ソースは `.github/generate_source.py` がビルド時に生成します。`nightly` リリースの固定URLを使うため、SideStore側で一度ソースを追加すれば、次回以降は更新を確認できます。
 
 ```text
 Actions → Build NContainer IPA → Run workflow

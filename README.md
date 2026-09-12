@@ -21,6 +21,14 @@ The SideStore embedded build is the primary NContainer build. Development, verif
 
 GitHub Actions publishes both unsigned IPA files as prerelease assets and writes download links, version, build number, file size, and SHA-256 to the run summary. See [AGENT.md](AGENT.md) for the development rules and build workflow.
 
+### SideStore source
+
+SideStoreの「Sources」から次のURLを追加すると、NContainerのSideStore内蔵版を直接インストールできます。
+
+`https://github.com/nezumi0627/NContainer/releases/download/nightly/ncontainer_source.json`
+
+このソースは `nightly` リリースに毎回更新され、常に最新のNContainer IPAを指します。
+
 - LiveContainer is an app launcher (not emulator or hypervisor) that allows you to run iOS apps inside it.
 - Allows you to install unlimited apps (3 app/10 app id free developer account limit does not apply here) with only one app & app id. You can also have multiple versions of an app installed with multiple data containers.
 - (Below iOS 26) When JIT is available, codesign is entirely bypassed, no need to sign your apps before installing. Otherwise, your app will be signed with the same certificate used by LiveContainer.

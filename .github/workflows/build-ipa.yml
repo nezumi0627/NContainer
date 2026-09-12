@@ -9,6 +9,7 @@ on:
       - "LiveContainer.xcodeproj/**"
       - "xcconfigs/**"
       - ".github/build_github.sh"
+      - ".github/generate_source.py"
       - ".github/workflows/build-ipa.yml"
   workflow_dispatch:
 
@@ -27,6 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 1
 
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -36,7 +38,14 @@ jobs:
       - name: Show build environment
         run: |
           xcodebuild -version
-          xcodebuild -showsdks | grep iphoneos
+
+      - name: Restore Xcode build cache
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ncontainer-xcode26-${{ runner.os }}-${{ hashFiles('LiveContainer.xcodeproj/project.pbxproj', 'xcconfigs/**') }}
+          restore-keys: |
+            ncontainer-xcode26-${{ runner.os }}-
 
       - name: Archive unsigned app
         run: |
@@ -48,6 +57,8 @@ jobs:
             -sdk iphoneos \
             -arch arm64 \
             -archivePath "$archive_path.xcarchive" \
+            -derivedDataPath "$HOME/Library/Developer/Xcode/DerivedData/NContainer" \
+            -parallelizeTargets \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY='' \
@@ -76,6 +87,14 @@ jobs:
             echo "SIDESTORE_SHA256=${SIDESTORE_SHA256}"
           } >> "$GITHUB_ENV"
 
+      - name: Generate NContainer SideStore source
+        env:
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: nightly
+        run: |
+          VERSION="$IPA_VERSION" BUILD="$IPA_BUILD" IPA_SIZE="$IPA_SIZE" \
+            python3 .github/generate_source.py .github/ncontainer_source.json
+
       - name: Write build details
         run: |
           cat > build-summary.md <<EOF
@@ -95,13 +114,16 @@ jobs:
       - name: Publish public IPA release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "build-${{ github.run_id }}"
+          tag_name: nightly
           name: "NContainer build ${{ github.run_number }} (SideStore embedded)"
           prerelease: true
+          make_latest: false
+          overwrite_files: true
           body_path: build-summary.md
           files: |
             ${{ env.scheme }}.ipa
             ${{ env.scheme }}+SideStore.ipa
+            .github/ncontainer_source.json
 
       - name: Upload IPA artifacts
         uses: actions/upload-artifact@v4
@@ -111,6 +133,7 @@ jobs:
             ${{ env.scheme }}.ipa
             ${{ env.scheme }}+SideStore.ipa
             build-summary.md
+            .github/ncontainer_source.json
           if-no-files-found: error
           retention-days: 14
 
@@ -121,9 +144,10 @@ jobs:
             echo ""
             echo "### Download"
             echo ""
-            echo "[⬇️ Download SideStore embedded IPA](https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_id }}/${scheme}%2BSideStore.ipa)"
+            echo "[⬇️ Download SideStore embedded IPA](https://github.com/${{ github.repository }}/releases/download/nightly/${scheme}%2BSideStore.ipa)"
             echo ""
-            echo "[⬇️ Download standard IPA](https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_id }}/${scheme}.ipa)"
+            echo "[⬇️ Download standard IPA](https://github.com/${{ github.repository }}/releases/download/nightly/${scheme}.ipa)"
+            echo "[➕ Add NContainer to SideStore](https://github.com/${{ github.repository }}/releases/download/nightly/ncontainer_source.json)"
             echo ""
             echo "### Build details"
             echo ""
