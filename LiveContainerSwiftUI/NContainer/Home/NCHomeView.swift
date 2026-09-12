@@ -10,23 +10,6 @@ struct NCHomeView: View {
 
     @State private var route: Route?
 
-    private struct DismissToolbar: ViewModifier {
-        @Environment(\.dismiss) private var dismiss
-
-        func body(content: Content) -> some View {
-            content.toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Label("戻る", systemImage: "chevron.backward")
-                    }
-                    .accessibilityLabel("前の画面に戻る")
-                }
-            }
-        }
-    }
-
     var body: some View {
         NavigationView {
             ScrollView {
@@ -142,15 +125,15 @@ struct NCHomeView: View {
     private func destination(for route: Route) -> some View {
         switch route {
         case .appLibrary:
-            LCAppListView().modifier(DismissToolbar())
+            LCAppListView()
         case .sources:
-            LCSourcesView().modifier(DismissToolbar())
+            LCSourcesView()
         case .tweaks:
-            LCTweaksView().modifier(DismissToolbar())
+            LCTweaksView()
         case .plugins:
-            NavigationView { NCPluginManagerView().modifier(DismissToolbar()) }
+            NavigationView { NCPluginManagerView() }
         case .fullscreen:
-            NavigationView { LCMultitaskSettingView().modifier(DismissToolbar()) }
+            NavigationView { LCMultitaskSettingView() }
         }
     }
 }
