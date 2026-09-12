@@ -3,6 +3,8 @@ import SwiftUI
 struct NCAppGrid: View {
     @EnvironmentObject private var sharedModel: SharedModel
     @AppStorage("darkModeIcon") private var darkModeIcon = false
+    @State private var settingsApp: LCAppModel?
+    @State private var showSettings = false
 
     private let columns = [GridItem(.adaptive(minimum: 82, maximum: 110), spacing: 22)]
 
@@ -20,10 +22,25 @@ struct NCAppGrid: View {
                         } label: {
                             Label("App Settings", systemImage: "gearshape")
                         }
+                        Button {
+                            settingsApp = app
+                            showSettings = true
+                        } label: {
+                            Label("Open App Settings", systemImage: "slider.horizontal.3")
+                        }
                     }
             }
         }
         .padding(.horizontal)
+        .sheet(isPresented: $showSettings) {
+            if let settingsApp {
+                NavigationView {
+                    LCAppSettingsView(model: settingsApp)
+                        .navigationTitle("App Settings")
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+        }
     }
 
     private func launch(_ app: LCAppModel) {

@@ -24,6 +24,15 @@ struct NCStatusView: View {
                 statusItem("Certificate", value: certificateText, color: certificateColor)
                 statusItem("SideStore", value: UserDefaults.sideStoreExist() ? "Ready" : "—", color: UserDefaults.sideStoreExist() ? .green : .secondary)
             }
+            if let expirationDate {
+                Text("有効期限: \(expirationDate.formatted(date: .numeric, time: .shortened))")
+                    .font(.caption)
+                    .foregroundStyle(certificateColor)
+            } else if certificateReady {
+                Text("証明書の有効期限を確認中…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(14)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))

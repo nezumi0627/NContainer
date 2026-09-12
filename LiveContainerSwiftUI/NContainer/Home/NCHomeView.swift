@@ -2,6 +2,11 @@ import SwiftUI
 
 struct NCHomeView: View {
     @EnvironmentObject private var sharedModel: SharedModel
+    @State private var showAppLibrary = false
+    @State private var showSources = false
+    @State private var showTweaks = false
+    @State private var showPlugins = false
+    @State private var showFullscreenSettings = false
 
     var body: some View {
         NavigationView {
@@ -10,10 +15,8 @@ struct NCHomeView: View {
                     Text("NContainer")
                         .font(.largeTitle.bold())
                         .padding(.horizontal)
-                    if NCBetaFeatures.isEnabled(.nStatus) {
-                        NCStatusView()
-                            .padding(.horizontal)
-                    }
+                    NCStatusView()
+                        .padding(.horizontal)
                     if sharedModel.apps.isEmpty {
                         VStack(spacing: 10) {
                             Image(systemName: "square.stack.3d.up")
@@ -42,31 +45,31 @@ struct NCHomeView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
-                        NavigationLink {
-                            LCAppListView()
+                        Button {
+                            showAppLibrary = true
                         } label: {
                             Label("App Library", systemImage: "list.bullet.rectangle")
                         }
-                        NavigationLink {
-                            LCSourcesView()
+                        Button {
+                            showSources = true
                         } label: {
                             Label("SideStore Sources", systemImage: "books.vertical")
                         }
-                        NavigationLink {
-                            LCTweaksView()
+                        Button {
+                            showTweaks = true
                         } label: {
                             Label("Tweak Manager", systemImage: "wrench.and.screwdriver")
                         }
                         if NCBetaFeatures.isEnabled(.fullscreenApps) {
-                            NavigationLink {
-                                LCMultitaskSettingView()
+                            Button {
+                                showFullscreenSettings = true
                             } label: {
                                 Label("Fullscreen Apps", systemImage: "arrow.up.left.and.arrow.down.right")
                             }
                         }
                         if NCBetaFeatures.isEnabled(.pluginSystem) {
-                            NavigationLink {
-                                NCPluginManagerView()
+                            Button {
+                                showPlugins = true
                             } label: {
                                 Label("Plugin Manager", systemImage: "puzzlepiece.extension")
                             }
@@ -76,12 +79,31 @@ struct NCHomeView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        LCAppListView()
+                    Button {
+                        showAppLibrary = true
                     } label: {
                         Label("Import IPA", systemImage: "doc.badge.plus")
                     }
                     .accessibilityLabel("IPAを取り込む。App Libraryの追加ボタンを開きます")
+                }
+            }
+            .sheet(isPresented: $showAppLibrary) {
+                LCAppListView()
+            }
+            .sheet(isPresented: $showSources) {
+                LCSourcesView()
+            }
+            .sheet(isPresented: $showTweaks) {
+                LCTweaksView()
+            }
+            .sheet(isPresented: $showPlugins) {
+                NavigationView {
+                    NCPluginManagerView()
+                }
+            }
+            .sheet(isPresented: $showFullscreenSettings) {
+                NavigationView {
+                    LCMultitaskSettingView()
                 }
             }
         }
