@@ -13,4 +13,9 @@ DEVELOPMENT_TEAM_SUFFIX[config=Release] =
 
 APP_GROUP_SIDESTORE = group.com.SideStore.SideStore$(DEVELOPMENT_TEAM_SUFFIX)
 APP_GROUP_ALTSTORE = group.com.rileytestut.AltStore$(DEVELOPMENT_TEAM_SUFFIX)
-LIVECONTAINER_BUNDLE_IDENTIFIER = com.kdt.livecontainer$(DEVELOPMENT_TEAM_SUFFIX)
+
+// Keep the host bundle identifier stable across debug and release signing.
+// The team identifier belongs in application-identifier as the signing prefix;
+// appending it here turns an update into a different iOS application and loses
+// SideStore's keychain-backed login state.
+LIVECONTAINER_BUNDLE_IDENTIFIER = com.kdt.livecontainer
