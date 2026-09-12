@@ -817,7 +817,6 @@ public struct MultitaskDockSwiftView: View {
     @State private var dragOffset = CGSize.zero
     @State private var isMoving: Bool = false
     @AppStorage("LCHideCollapsedDock", store: LCUtils.appGroupUserDefault) var hideCollapsedDock: Bool = false
-    @AppStorage("NCPlugin.AppSwitcherOverlay") private var appSwitcherOverlay = true
     
     // Calculate dynamic padding based on user settings
     private var dynamicPadding: CGFloat {
@@ -836,12 +835,6 @@ public struct MultitaskDockSwiftView: View {
                         }
                 } else {
                     VStack(spacing: 8) {
-                        if appSwitcherOverlay {
-                            AppSwitcherPluginButtonView()
-                                .onTapGesture {
-                                    dockManager.toggleDockCollapse()
-                                }
-                        }
                         CollapseButtonView()
                             .onTapGesture {
                                 dockManager.toggleDockCollapse()
@@ -979,27 +972,6 @@ public struct MultitaskDockSwiftView: View {
     }
     
     public init() {}
-}
-
-@available(iOS 16.0, *)
-struct AppSwitcherPluginButtonView: View {
-    @EnvironmentObject var dockManager: MultitaskDockManager
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.blue.opacity(0.85))
-                .frame(width: dockManager.adaptiveIconSize, height: dockManager.adaptiveIconSize)
-            Image(systemName: "rectangle.stack.badge.person.crop")
-                .foregroundColor(.white)
-                .font(.system(size: dockManager.adaptiveIconSize * 0.38, weight: .semibold))
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.white.opacity(0.25), lineWidth: 1)
-        )
-        .accessibilityLabel("NContainer app switcher")
-    }
 }
 
 // MARK: - Collapsed Dock View

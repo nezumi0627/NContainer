@@ -471,10 +471,6 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     
     setenv("CFFIXED_USER_HOME", newHomePath.UTF8String, 1);
     setenv("HOME", newHomePath.UTF8String, 1);
-    // NContainer appearance settings are read by the tweak loader inside the
-    // launched app. Keep this as an environment value so guest preferences
-    // remain isolated from the host application's UserDefaults.
-    setenv("NC_DISABLE_LIQUID_GLASS", [lcUserDefaults boolForKey:@"NCBeta.DisableLiquidGlass"] ? "1" : "0", 1);
     // we don't change TMP's env in case some apps clear cache by directly deleting the tmp folder,
     // which if symlinked, the new tmp cannot be recreated (#1040, #1125) or the app may camplain about the tmp folder being a symlimk (#884)
 
