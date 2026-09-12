@@ -6,8 +6,6 @@ on:
     paths:
       - "LiveContainer/**"
       - "LiveContainerSwiftUI/**"
-      - "MultitaskSupport/**"
-      - "TweakLoader/**"
       - "LiveContainer.xcodeproj/**"
       - "xcconfigs/**"
       - ".github/build_github.sh"
