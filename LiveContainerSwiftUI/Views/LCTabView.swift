@@ -30,10 +30,12 @@ struct LCTabView: View {
                     }
                     .tag(LCTabIdentifier.sources)
             }
-            if NCBetaFeatures.isEnabled(.ncontainerHome) {
-                NCHomeView()
-            } else {
-                LCAppListView()
+            Group {
+                if NCBetaFeatures.isEnabled(.ncontainerHome) {
+                    NCHomeView()
+                } else {
+                    LCAppListView()
+                }
             }
                 .tabItem {
                     Label("lc.tabView.apps".loc, systemImage: "square.stack.3d.up.fill")
