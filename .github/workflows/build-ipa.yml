@@ -62,9 +62,16 @@ jobs:
           cp -R "$APP_PATH" Payload/
           ditto -c -k --sequesterRsrc --keepParent Payload "${APP_NAME}-v${VERSION}-build${BUILD}.ipa"
           unzip -t "${APP_NAME}-v${VERSION}-build${BUILD}.ipa"
+          SIZE=$(stat -f%z "${APP_NAME}-v${VERSION}-build${BUILD}.ipa")
+          SHA256=$(shasum -a 256 "${APP_NAME}-v${VERSION}-build${BUILD}.ipa" | awk '{print $1}')
           echo "IPA_NAME=${APP_NAME}-v${VERSION}-build${BUILD}.ipa" >> "$GITHUB_ENV"
+          echo "IPA_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "IPA_BUILD=${BUILD}" >> "$GITHUB_ENV"
+          echo "IPA_SIZE=${SIZE}" >> "$GITHUB_ENV"
+          echo "IPA_SHA256=${SHA256}" >> "$GITHUB_ENV"
 
       - name: Upload IPA artifact
+        id: upload_ipa
         uses: actions/upload-artifact@v4
         with:
           name: NContainer-IPA
@@ -75,8 +82,20 @@ jobs:
       - name: Build summary
         run: |
           {
-            echo "## NContainer IPA"
+            echo "## NContainer IPA ✅"
             echo ""
-            echo "- Artifact: \`${IPA_NAME}\`"
-            echo "- Signing: unsigned"
+            echo "### Download"
+            echo ""
+            echo "[⬇️ Download IPA artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload_ipa.outputs.artifact-id }})"
+            echo ""
+            echo "### Build details"
+            echo ""
+            echo "| Item | Value |"
+            echo "| --- | --- |"
+            echo "| File | \`${IPA_NAME}\` |"
+            echo "| Version | \`${IPA_VERSION}\` |"
+            echo "| Build | \`${IPA_BUILD}\` |"
+            echo "| Size | \`${IPA_SIZE}\` bytes |"
+            echo "| SHA-256 | \`${IPA_SHA256}\` |"
+            echo "| Signing | unsigned |"
           } >> "$GITHUB_STEP_SUMMARY"
