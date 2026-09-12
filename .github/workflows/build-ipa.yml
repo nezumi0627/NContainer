@@ -8,6 +8,7 @@ on:
       - "LiveContainerSwiftUI/**"
       - "LiveContainer.xcodeproj/**"
       - "xcconfigs/**"
+      - ".github/build_github.sh"
       - ".github/workflows/build-ipa.yml"
   workflow_dispatch:
 
@@ -17,6 +18,9 @@ permissions:
 jobs:
   build:
     runs-on: macos-latest
+    env:
+      scheme: LiveContainer
+      archive_path: archive
 
     steps:
       - name: Checkout
@@ -34,52 +38,57 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks | grep iphoneos
 
-      - name: Build unsigned app
+      - name: Archive unsigned app
         run: |
           set -euxo pipefail
-          xcodebuild \
+          xcodebuild archive \
             -project LiveContainer.xcodeproj \
-            -scheme LiveContainer \
+            -scheme "$scheme" \
             -configuration Release \
             -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath DerivedData \
+            -arch arm64 \
+            -archivePath "$archive_path.xcarchive" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY='' \
-            DEVELOPMENT_TEAM='' \
-            build
+            DEVELOPMENT_TEAM=''
 
-      - name: Package IPA
+      - name: Package IPA with embedded SideStore
         run: |
           set -euxo pipefail
-          APP_PATH=$(find DerivedData/Build/Products -maxdepth 2 -type d -name '*.app' -print -quit)
-          test -n "$APP_PATH"
-          APP_NAME=$(basename "$APP_PATH" .app)
-          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Info.plist")
-          BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_PATH/Info.plist")
-          mkdir -p Payload
-          cp -R "$APP_PATH" Payload/
-          ditto -c -k --sequesterRsrc --keepParent Payload "${APP_NAME}-v${VERSION}-build${BUILD}.ipa"
-          unzip -t "${APP_NAME}-v${VERSION}-build${BUILD}.ipa"
-          SIZE=$(stat -f%z "${APP_NAME}-v${VERSION}-build${BUILD}.ipa")
-          SHA256=$(shasum -a 256 "${APP_NAME}-v${VERSION}-build${BUILD}.ipa" | awk '{print $1}')
-          echo "IPA_NAME=${APP_NAME}-v${VERSION}-build${BUILD}.ipa" >> "$GITHUB_ENV"
-          echo "IPA_VERSION=${VERSION}" >> "$GITHUB_ENV"
-          echo "IPA_BUILD=${BUILD}" >> "$GITHUB_ENV"
-          echo "IPA_SIZE=${SIZE}" >> "$GITHUB_ENV"
-          echo "IPA_SHA256=${SHA256}" >> "$GITHUB_ENV"
+          bash .github/build_github.sh
+          test -f "${scheme}.ipa"
+          test -f "${scheme}+SideStore.ipa"
+          unzip -t "${scheme}+SideStore.ipa"
+          APP_INFO="Payload/LiveContainer.app/Info.plist"
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_INFO")
+          BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_INFO")
+          IPA_SIZE=$(stat -f%z "${scheme}+SideStore.ipa")
+          IPA_SHA256=$(shasum -a 256 "${scheme}+SideStore.ipa" | awk '{print $1}')
+          SIDESTORE_SIZE=$(stat -f%z "${scheme}.ipa")
+          SIDESTORE_SHA256=$(shasum -a 256 "${scheme}.ipa" | awk '{print $1}')
+          {
+            echo "IPA_VERSION=${VERSION}"
+            echo "IPA_BUILD=${BUILD}"
+            echo "IPA_SIZE=${IPA_SIZE}"
+            echo "IPA_SHA256=${IPA_SHA256}"
+            echo "SIDESTORE_SIZE=${SIDESTORE_SIZE}"
+            echo "SIDESTORE_SHA256=${SIDESTORE_SHA256}"
+          } >> "$GITHUB_ENV"
 
       - name: Write build details
         run: |
           cat > build-summary.md <<EOF
           # NContainer IPA
 
-          - File: `${IPA_NAME}`
+          - SideStore embedded: `${scheme}+SideStore.ipa`
+          - Standard: `${scheme}.ipa`
           - Version: `${IPA_VERSION}`
           - Build: `${IPA_BUILD}`
-          - Size: `${IPA_SIZE}` bytes
-          - SHA-256: `${IPA_SHA256}`
+          - SideStore IPA size: `${IPA_SIZE}` bytes
+          - SideStore IPA SHA-256: `${IPA_SHA256}`
+          - Standard IPA size: `${SIDESTORE_SIZE}` bytes
+          - Standard IPA SHA-256: `${SIDESTORE_SHA256}`
           - Signing: unsigned
           EOF
 
@@ -87,18 +96,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "build-${{ github.run_id }}"
-          name: "NContainer build ${{ github.run_number }}"
+          name: "NContainer build ${{ github.run_number }} (SideStore embedded)"
           prerelease: true
           body_path: build-summary.md
-          files: ${{ env.IPA_NAME }}
+          files: |
+            ${{ env.scheme }}.ipa
+            ${{ env.scheme }}+SideStore.ipa
 
-      - name: Upload IPA artifact
-        id: upload_ipa
+      - name: Upload IPA artifacts
         uses: actions/upload-artifact@v4
         with:
           name: NContainer-IPA
           path: |
-            ${{ env.IPA_NAME }}
+            ${{ env.scheme }}.ipa
+            ${{ env.scheme }}+SideStore.ipa
             build-summary.md
           if-no-files-found: error
           retention-days: 14
@@ -110,18 +121,20 @@ jobs:
             echo ""
             echo "### Download"
             echo ""
-            echo "[⬇️ Download IPA](https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_id }}/${IPA_NAME})"
+            echo "[⬇️ Download SideStore embedded IPA](https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_id }}/${scheme}%2BSideStore.ipa)"
             echo ""
-            echo "[Actions artifact (requires GitHub login)](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo "[⬇️ Download standard IPA](https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_id }}/${scheme}.ipa)"
             echo ""
             echo "### Build details"
             echo ""
             echo "| Item | Value |"
             echo "| --- | --- |"
-            echo "| File | \`${IPA_NAME}\` |"
+            echo "| SideStore embedded | \`${scheme}+SideStore.ipa\` |"
             echo "| Version | \`${IPA_VERSION}\` |"
             echo "| Build | \`${IPA_BUILD}\` |"
-            echo "| Size | \`${IPA_SIZE}\` bytes |"
-            echo "| SHA-256 | \`${IPA_SHA256}\` |"
+            echo "| SideStore IPA size | \`${IPA_SIZE}\` bytes |"
+            echo "| SideStore IPA SHA-256 | \`${IPA_SHA256}\` |"
+            echo "| Standard IPA size | \`${SIDESTORE_SIZE}\` bytes |"
+            echo "| Standard IPA SHA-256 | \`${SIDESTORE_SHA256}\` |"
             echo "| Signing | unsigned |"
           } >> "$GITHUB_STEP_SUMMARY"
