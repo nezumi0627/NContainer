@@ -1,0 +1,77 @@
+name: Build NContainer IPA
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "LiveContainer/**"
+      - "LiveContainerSwiftUI/**"
+      - "LiveContainer.xcodeproj/**"
+      - "xcconfigs/**"
+      - ".github/workflows/build-ipa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Show build environment
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks | grep iphoneos
+
+      - name: Build unsigned app
+        run: |
+          set -euxo pipefail
+          xcodebuild \
+            -project LiveContainer.xcodeproj \
+            -scheme LiveContainer \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            DEVELOPMENT_TEAM='' \
+            build
+
+      - name: Package IPA
+        run: |
+          set -euxo pipefail
+          APP_PATH=$(find DerivedData/Build/Products -maxdepth 2 -type d -name '*.app' -print -quit)
+          test -n "$APP_PATH"
+          APP_NAME=$(basename "$APP_PATH" .app)
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Info.plist")
+          BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_PATH/Info.plist")
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          ditto -c -k --sequesterRsrc --keepParent Payload "${APP_NAME}-v${VERSION}-build${BUILD}.ipa"
+          unzip -t "${APP_NAME}-v${VERSION}-build${BUILD}.ipa"
+          echo "IPA_NAME=${APP_NAME}-v${VERSION}-build${BUILD}.ipa" >> "$GITHUB_ENV"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NContainer-IPA
+          path: "${{ env.IPA_NAME }}"
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Build summary
+        run: |
+          {
+            echo "## NContainer IPA"
+            echo ""
+            echo "- Artifact: \`${IPA_NAME}\`"
+            echo "- Signing: unsigned"
+          } >> "$GITHUB_STEP_SUMMARY"
