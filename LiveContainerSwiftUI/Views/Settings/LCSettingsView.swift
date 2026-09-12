@@ -69,7 +69,6 @@ struct LCSettingsView: View {
     @AppStorage("BKNoWatchdogs") var disableLiveProcessWatchdog = false
     
     @EnvironmentObject private var sharedModel : SharedModel
-    @Environment(\.openURL) private var openURL
     
     @State private var isViewAppeared = false
     
@@ -83,17 +82,6 @@ struct LCSettingsView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section {
-                    NavigationLink {
-                        NCBetaSettingsView()
-                    } label: {
-                        Label("NContainer Beta Lab", systemImage: "flask.fill")
-                    }
-                } header: {
-                    Text("NContainer")
-                } footer: {
-                    Text("NContainerのBeta機能をここから管理します。")
-                }
                 if sharedModel.multiLCStatus != 2 {
                     Section{
                         if !certificateDataFound {
@@ -229,6 +217,15 @@ struct LCSettingsView: View {
                     Text("lc.settings.dynamicColors.desc".loc)
                 }
 
+                Section {
+                    NavigationLink {
+                        NCBetaSettingsView()
+                    } label: {
+                        Label("NContainer Beta Lab", systemImage: "flask")
+                    }
+                } footer: {
+                    Text("NContainer の Beta 機能を個別に有効化できます。")
+                }
                 Section{
                     Toggle(isOn: $frameShortIcon) {
                         Text("lc.settings.FrameIcon".loc)
@@ -388,30 +385,6 @@ struct LCSettingsView: View {
                     } footer: {
                         Text("lc.settings.injectLCItselfDesc".loc)
                     }
-                }
-
-                Section {
-                    HStack {
-                        Label("Developer", systemImage: "person.crop.circle.badge.checkmark")
-                        Spacer()
-                        Text("nezumi0627")
-                            .foregroundStyle(.secondary)
-                    }
-                    Button {
-                        openURL(URL(string: "https://github.com/nezumi0627/NContainer")!)
-                    } label: {
-                        Label("NContainer GitHub", systemImage: "link")
-                    }
-                    HStack {
-                        Text("Project")
-                        Spacer()
-                        Text("NContainer")
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text("NContainer Developer")
-                } footer: {
-                    Text("NContainerの専用機能と開発情報")
                 }
             }
             .navigationBarTitle("lc.tabView.settings".loc)
