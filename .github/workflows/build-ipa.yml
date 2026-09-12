@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -70,12 +70,36 @@ jobs:
           echo "IPA_SIZE=${SIZE}" >> "$GITHUB_ENV"
           echo "IPA_SHA256=${SHA256}" >> "$GITHUB_ENV"
 
+      - name: Write build details
+        run: |
+          cat > build-summary.md <<EOF
+          # NContainer IPA
+
+          - File: `${IPA_NAME}`
+          - Version: `${IPA_VERSION}`
+          - Build: `${IPA_BUILD}`
+          - Size: `${IPA_SIZE}` bytes
+          - SHA-256: `${IPA_SHA256}`
+          - Signing: unsigned
+          EOF
+
+      - name: Publish public IPA release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "build-${{ github.run_id }}"
+          name: "NContainer build ${{ github.run_number }}"
+          prerelease: true
+          body_path: build-summary.md
+          files: ${{ env.IPA_NAME }}
+
       - name: Upload IPA artifact
         id: upload_ipa
         uses: actions/upload-artifact@v4
         with:
           name: NContainer-IPA
-          path: "${{ env.IPA_NAME }}"
+          path: |
+            ${{ env.IPA_NAME }}
+            build-summary.md
           if-no-files-found: error
           retention-days: 14
 
@@ -86,7 +110,9 @@ jobs:
             echo ""
             echo "### Download"
             echo ""
-            echo "[⬇️ Download IPA artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload_ipa.outputs.artifact-id }})"
+            echo "[⬇️ Download IPA](https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_id }}/${IPA_NAME})"
+            echo ""
+            echo "[Actions artifact (requires GitHub login)](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             echo ""
             echo "### Build details"
             echo ""
