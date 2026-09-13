@@ -231,15 +231,17 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                             .font(.system(.title2).bold())
                         Spacer()
                     }
-                    if gridViewEnabled && sharedModel.isHiddenAppUnlocked {
-                        appCollection(filteredHiddenApps)
-                    } else if sharedModel.isHiddenAppUnlocked {
-                        ForEach(filteredHiddenApps, id: \.self) { app in
-                            LCAppBanner(appModel: app, delegate: self)
-                        }
-                    } else {
-                        ForEach(filteredHiddenApps, id: \.self) { _ in
-                            LCAppSkeletonBanner()
+                    Group {
+                        if gridViewEnabled && sharedModel.isHiddenAppUnlocked {
+                            appCollection(filteredHiddenApps)
+                        } else if sharedModel.isHiddenAppUnlocked {
+                            ForEach(filteredHiddenApps, id: \.self) { app in
+                                LCAppBanner(appModel: app, delegate: self)
+                            }
+                        } else {
+                            ForEach(filteredHiddenApps, id: \.self) { _ in
+                                LCAppSkeletonBanner()
+                            }
                         }
                     }
                     .animation(.easeInOut, value: sharedModel.isHiddenAppUnlocked)
