@@ -187,7 +187,73 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     init() {
         _installOptions = State(initialValue: [])
     }
-    
+
+    @ViewBuilder
+    private var appListContent: some View {
+        appCollection(filteredApps)
+        hiddenAppsContent
+
+        let appCount = sharedModel.isHiddenAppUnlocked ? filteredApps.count + filteredHiddenApps.count : filteredApps.count
+        Text(appCount > 0 || searchContext.debouncedQuery != "" ? "lc.appList.appCounter %lld".localizeWithFormat(appCount) : (sharedModel.multiLCStatus == 2 ? "lc.appList.convertToSharedToShowInLC2".loc : "lc.appList.installTip".loc))
+            .padding(.horizontal)
+            .foregroundStyle(.gray)
+            .animation(searchContext.isTyping ? nil : .easeInOut, value: appCount)
+            .onTapGesture(count: 3) {
+                Task { await authenticateUser() }
+            }
+
+        if sharedModel.multiLCStatus == 2 {
+            Text("lc.appList.manageInPrimaryTip".loc).foregroundStyle(.gray).padding()
+        }
+    }
+
+    @ViewBuilder
+    private var hiddenAppsContent: some View {
+        VStack {
+            if LCUtils.appGroupUserDefault.bool(forKey: "LCStrictHiding") {
+                if sharedModel.isHiddenAppUnlocked {
+                    VStack(alignment: .leading) {
+                        Text("lc.appList.hiddenApps".loc)
+                            .font(.system(.title2).bold())
+                        appCollection(filteredHiddenApps)
+                    }
+                    .padding(.top)
+                    .transition(.opacity)
+                    if sharedModel.hiddenApps.count == 0 {
+                        Text("lc.appList.hideAppTip".loc)
+                            .foregroundStyle(.gray)
+                    }
+                }
+            } else if sharedModel.hiddenApps.count > 0 {
+                LazyVStack {
+                    HStack {
+                        Text("lc.appList.hiddenApps".loc)
+                            .font(.system(.title2).bold())
+                        Spacer()
+                    }
+                    if gridViewEnabled && sharedModel.isHiddenAppUnlocked {
+                        appCollection(filteredHiddenApps)
+                    } else if sharedModel.isHiddenAppUnlocked {
+                        ForEach(filteredHiddenApps, id: \.self) { app in
+                            LCAppBanner(appModel: app, delegate: self)
+                        }
+                    } else {
+                        ForEach(filteredHiddenApps, id: \.self) { _ in
+                            LCAppSkeletonBanner()
+                        }
+                    }
+                    .animation(.easeInOut, value: sharedModel.isHiddenAppUnlocked)
+                    .onTapGesture {
+                        Task { await authenticateUser() }
+                    }
+                }
+                .padding()
+                .animation(searchContext.isTyping ? nil : .easeInOut, value: filteredHiddenApps)
+            }
+        }
+        .animation(searchContext.isTyping ? nil : .easeInOut, value: LCUtils.appGroupUserDefault.bool(forKey: "LCStrictHiding"))
+    }
+
     var body: some View {
         NavigationView {
             ScrollView {
@@ -199,63 +265,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 })
                 .hidden()
                 
-                appCollection(filteredApps)
-
-                VStack {
-                    if LCUtils.appGroupUserDefault.bool(forKey: "LCStrictHiding") {
-                        if sharedModel.isHiddenAppUnlocked {
-                            VStack(alignment: .leading) {
-                                Text("lc.appList.hiddenApps".loc)
-                                    .font(.system(.title2).bold())
-                                appCollection(filteredHiddenApps)
-                            }
-                            .padding(.top)
-                            .transition(.opacity)
-                            if sharedModel.hiddenApps.count == 0 {
-                                Text("lc.appList.hideAppTip".loc)
-                                    .foregroundStyle(.gray)
-                            }
-                        }
-                    } else if sharedModel.hiddenApps.count > 0 {
-                        LazyVStack {
-                            HStack {
-                                Text("lc.appList.hiddenApps".loc)
-                                    .font(.system(.title2).bold())
-                                Spacer()
-                            }
-                            if gridViewEnabled && sharedModel.isHiddenAppUnlocked {
-                                appCollection(filteredHiddenApps)
-                            } else if sharedModel.isHiddenAppUnlocked {
-                                ForEach(filteredHiddenApps, id: \.self) { app in
-                                    LCAppBanner(appModel: app, delegate: self)
-                                }
-                            } else {
-                                ForEach(filteredHiddenApps, id: \.self) { _ in
-                                    LCAppSkeletonBanner()
-                                }
-                            }
-                            .animation(.easeInOut, value: sharedModel.isHiddenAppUnlocked)
-                            .onTapGesture {
-                                Task { await authenticateUser() }
-                            }
-                        }
-                        .padding()
-                        .animation(searchContext.isTyping ? nil : .easeInOut, value: filteredHiddenApps)
-                    }
-
-                    let appCount = sharedModel.isHiddenAppUnlocked ? filteredApps.count + filteredHiddenApps.count : filteredApps.count
-                    Text(appCount > 0 || searchContext.debouncedQuery != "" ? "lc.appList.appCounter %lld".localizeWithFormat(appCount) : (sharedModel.multiLCStatus == 2 ? "lc.appList.convertToSharedToShowInLC2".loc : "lc.appList.installTip".loc))
-                        .padding(.horizontal)
-                        .foregroundStyle(.gray)
-                        .animation(searchContext.isTyping ? nil : .easeInOut, value: appCount)
-                        .onTapGesture(count: 3) {
-                            Task { await authenticateUser() }
-                        }
-                }.animation(searchContext.isTyping ? nil : .easeInOut, value: LCUtils.appGroupUserDefault.bool(forKey: "LCStrictHiding"))
-
-                if sharedModel.multiLCStatus == 2 {
-                    Text("lc.appList.manageInPrimaryTip".loc).foregroundStyle(.gray).padding()
-                }
+                appListContent
 
             }
             .navigationBarProgressBar(show:$installprogressVisible, progress: $installProgressPercentage)
