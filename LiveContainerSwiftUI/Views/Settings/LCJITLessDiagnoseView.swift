@@ -7,8 +7,6 @@
 import SwiftUI
 
 struct LCEntitlementView : View {
-    private let expectedHostBundleIdentifier = "com.kdt.livecontainer"
-
     @State var isLiveProcess: Bool
     @State var loaded = false
     @State var entitlementReadSuccess = false
@@ -19,7 +17,6 @@ struct LCEntitlementView : View {
     @State var keyChainAccessGroup = false
     @State var correctBundleId : String?
     @State var isBundleIdCorrect = false
-    @State var expectedBundleId : String?
     @State var appGroup = false
     
     @State var entitlementContent = "Failed to Load Entitlement."
@@ -38,11 +35,11 @@ struct LCEntitlementView : View {
                         }
                     }
                     if entitlementReadSuccess {
-                        if !isBundleIdCorrect && teamId != nil {
+                        if !isLiveProcess && !isBundleIdCorrect && teamId != nil {
                             HStack {
                                 Text("lc.jitlessDiag.bundleIdExpected".loc)
                                 Spacer()
-                                Text(expectedBundleId ?? "lc.common.unknown".loc)
+                                Text(correctBundleId ?? "lc.common.unknown".loc)
                                     .foregroundStyle(.gray)
                             }
                         }
@@ -158,12 +155,13 @@ struct LCEntitlementView : View {
             }
         }
         if let appIdentifier = applicationIdentifier,
-           let separator = appIdentifier.firstIndex(of: ".") {
+            let separator = appIdentifier.firstIndex(of: ".") {
             correctBundleId = String(appIdentifier[appIdentifier.index(after: separator)...])
-            expectedBundleId = isLiveProcess
-                ? "\(expectedHostBundleIdentifier).LiveProcess"
-                : expectedHostBundleIdentifier
-            isBundleIdCorrect = correctBundleId == expectedBundleId
+            if isLiveProcess {
+                isBundleIdCorrect = correctBundleId == "com.kdt.livecontainer.\(entitlementTeamId ?? "").LiveProcess"
+            } else if let bundleId = Bundle.main.bundleIdentifier {
+                isBundleIdCorrect = bundleId == correctBundleId
+            }
         }
         
         getTaskAllow = entitlementDict["get-task-allow"] as? Bool ?? false
