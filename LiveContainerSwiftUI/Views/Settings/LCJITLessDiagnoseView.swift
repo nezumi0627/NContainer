@@ -12,6 +12,7 @@ struct LCEntitlementView : View {
     @State var entitlementReadSuccess = false
     
     @State var teamId : String?
+    @State var applicationIdentifier : String?
     @State var getTaskAllow = false
     @State var keyChainAccessGroup = false
     @State var correctBundleId : String?
@@ -47,6 +48,13 @@ struct LCEntitlementView : View {
                             Spacer()
                             Text(teamId ?? "lc.common.unknown".loc)
                                 .foregroundStyle(.gray)
+                        }
+                        HStack {
+                            Text("application-identifier")
+                            Spacer()
+                            Text(applicationIdentifier ?? "lc.common.unknown".loc)
+                                .foregroundStyle(isBundleIdCorrect ? .green : .red)
+                                .textSelection(.enabled)
                         }
                         HStack {
                             Text("get-task-allow")
@@ -125,6 +133,7 @@ struct LCEntitlementView : View {
         entitlementReadSuccess = true
         let entitlementTeamId = entitlementDict["com.apple.developer.team-identifier"] as? String
         teamId = entitlementTeamId
+        applicationIdentifier = entitlementDict["application-identifier"] as? String
         if let entitlementTeamId {
             if let appGroups = entitlementDict["com.apple.security.application-groups"] as? Array<String> {
                 if appGroups.count > 0 {
@@ -145,9 +154,9 @@ struct LCEntitlementView : View {
                 keyChainAccessGroup = !notFound
             }
         }
-        if let appIdentifier = entitlementDict["application-identifier"] as? String, appIdentifier.count > 11 {
-            let startIndex = appIdentifier.index(appIdentifier.startIndex, offsetBy: 11)
-            correctBundleId = String(appIdentifier[startIndex...])
+        if let appIdentifier = applicationIdentifier,
+           let separator = appIdentifier.firstIndex(of: ".") {
+            correctBundleId = String(appIdentifier[appIdentifier.index(after: separator)...])
             if let bundleId = Bundle.main.bundleIdentifier {
                 isBundleIdCorrect = bundleId == correctBundleId
             }
