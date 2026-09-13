@@ -7,6 +7,7 @@
 
 import Combine
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 class SearchContext: ObservableObject {
@@ -33,6 +34,7 @@ class SearchContext: ObservableObject {
 private struct LCAppGridCell: View {
     @ObservedObject var model: LCAppModel
     let darkModeIcon: Bool
+    let delegate: LCAppBannerDelegate
     let onSettings: () -> Void
     let onError: (String) -> Void
     @State private var isLaunching = false
@@ -41,47 +43,80 @@ private struct LCAppGridCell: View {
         Button {
             Task { await launch() }
         } label: {
-            VStack(spacing: 8) {
-                ZStack(alignment: .bottomTrailing) {
-                    IconImageView(icon: model.appInfo.iconIsDarkIcon(darkModeIcon))
-                        .frame(width: 72, height: 72)
+            ZStack(alignment: .bottomTrailing) {
+                IconImageView(icon: model.appInfo.iconIsDarkIcon(darkModeIcon))
+                    .frame(width: 76, height: 76)
 
-                    if model.isSigningInProgress || isLaunching {
-                        ProgressView()
-                            .padding(6)
-                            .background(.thinMaterial, in: Circle())
-                    } else if model.isAppRunning {
-                        Image(systemName: "play.fill")
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(.white)
-                            .padding(6)
-                            .background(.green, in: Circle())
-                    }
+                if model.isSigningInProgress || isLaunching {
+                    ProgressView()
+                        .padding(6)
+                        .background(.thinMaterial, in: Circle())
+                } else if model.isAppRunning {
+                    Image(systemName: "play.fill")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .padding(6)
+                        .background(.green, in: Circle())
                 }
-
-                Text(model.displayName)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, minHeight: 128)
-            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .frame(width: 88, height: 88)
         }
         .buttonStyle(.plain)
         .contextMenu {
             Button {
+                UIPasteboard.general.string = model.bundleIdentifier
+            } label: {
+                Label(model.bundleIdentifier, systemImage: "shippingbox")
+            }
+            if !model.uiIsShared, model.uiSelectedContainer != nil {
+                Button {
+                    openDataFolder()
+                } label: {
+                    Label("lc.appBanner.openDataFolder".loc, systemImage: "folder")
+                }
+            }
+            if #available(iOS 16.0, *) {
+                Button {
+                    Task { await launch(multitask: !model.shouldLaunchInMultitaskMode) }
+                } label: {
+                    Label(
+                        model.shouldLaunchInMultitaskMode ? "lc.appBanner.run".loc : "lc.appBanner.multitask".loc,
+                        systemImage: model.shouldLaunchInMultitaskMode ? "play.fill" : "macwindow.badge.plus"
+                    )
+                }
+            }
+            Menu {
+                Button {
+                    copyLaunchURL()
+                } label: {
+                    Label("lc.appBanner.copyLaunchUrl".loc, systemImage: "link")
+                }
+                Button {
+                    Task { await createAppClip() }
+                } label: {
+                    Label("lc.appBanner.createAppClip".loc, systemImage: "appclip")
+                }
+            } label: {
+                Label("lc.appBanner.addToHomeScreen".loc, systemImage: "plus.app")
+            }
+            Button {
                 onSettings()
             } label: {
                 Label("lc.tabView.settings".loc, systemImage: "gear")
+            }
+            if !model.uiIsShared {
+                Button(role: .destructive) {
+                    uninstall()
+                } label: {
+                    Label("lc.appBanner.uninstall".loc, systemImage: "trash")
+                }
             }
         }
         .accessibilityLabel(model.displayName)
         .accessibilityHint("lc.appBanner.run".loc)
     }
 
-    private func launch() async {
+    private func launch(multitask: Bool? = nil) async {
         guard !model.isAppRunning, !isLaunching else { return }
         isLaunching = true
         defer { isLaunching = false }
@@ -90,7 +125,43 @@ private struct LCAppGridCell: View {
             if model.appInfo.isLocked && !DataManager.shared.model.isHiddenAppUnlocked {
                 guard try await LCUtils.authenticateUser() else { return }
             }
-            try await model.runApp()
+            try await model.runApp(multitask: multitask)
+        } catch {
+            onError(error.localizedDescription)
+        }
+    }
+
+    private func openDataFolder() {
+        guard let folderName = model.uiSelectedContainer?.folderName,
+              let url = URL(string: "shareddocuments://\(LCPath.dataPath.path)/\(folderName)") else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func copyLaunchURL() {
+        guard let relativeBundlePath = model.appInfo.relativeBundlePath else { return }
+        if let folderName = model.uiSelectedContainer?.folderName {
+            UIPasteboard.general.string = "livecontainer://livecontainer-launch?bundle-name=\(relativeBundlePath)&container-folder-name=\(folderName)"
+        } else {
+            UIPasteboard.general.string = "livecontainer://livecontainer-launch?bundle-name=\(relativeBundlePath)"
+        }
+    }
+
+    private func createAppClip() async {
+        guard let style = await delegate.promptForGeneratedIconStyle(),
+              let profile = model.appInfo.generateWebClipConfig(withContainerId: model.uiSelectedContainer?.folderName, iconStyle: style) else { return }
+        do {
+            let data = try PropertyListSerialization.data(fromPropertyList: profile, format: .xml, options: 0)
+            delegate.installMdm(data: data)
+        } catch {
+            onError(error.localizedDescription)
+        }
+    }
+
+    private func uninstall() {
+        guard let bundlePath = model.appInfo.bundlePath() else { return }
+        do {
+            try FileManager.default.removeItem(atPath: bundlePath)
+            delegate.removeApp(app: model)
         } catch {
             onError(error.localizedDescription)
         }
@@ -513,6 +584,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                     LCAppGridCell(
                         model: app,
                         darkModeIcon: darkModeIcon,
+                        delegate: self,
                         onSettings: {
                             openNavigationView(view: AnyView(LCAppSettingsView(model: app)))
                         },
